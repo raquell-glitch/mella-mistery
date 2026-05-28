@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mella Mystery</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #060608;
+    --surface: #0c0c0f;
+    --surface2: #111114;
+    --border: rgba(255,255,255,0.06);
+    --green: #00f5a0;
+    --green-dim: rgba(0,245,160,0.15);
+    --green-glow: rgba(0,245,160,0.22);
+    --green-bright: rgba(0,245,160,0.5);
+    --text: #e2e2ea;
+    --text-muted: #55556a;
+    --text-mid: #9999b0;
+    --red: #ff4d6d;
+    --gold: #f5c842;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    font-family: 'Syne', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─── CANVAS ─── */
+  #canvas {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.35;
+  }
+
+  /* ─── SCREENS ─── */
+  .screen {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 28px 20px;
+  }
+
+  /* ════════════════════════════════
+     HOME
+  ════════════════════════════════ */
+  #home-screen {
+    flex-direction: column;
+    text-align: center;
+    opacity: 0;
+    animation: fadeUp 1s ease forwards 0.2s;
+  }
+
+  .home-eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.38em;
+    text-transform: uppercase;
+    color: var(--green);
+    margin-bottom: 44px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .home-eyebrow::before,
+  .home-eyebrow::after {
+    content: '';
+    width: 28px;
+    height: 1px;
+    background: var(--green);
+    opacity: 0.5;
+  }
+
+  .home-title {
+    font-size: clamp(58px, 11vw, 108px);
+    font-weight: 800;
+    line-height: 0.88;
+    letter-spacing: -0.03em;
+    margin-bottom: 20px;
+  }
+
+  .home-title .line1 { color: var(--text); }
+
+  .home-title .line2 {
+    color: transparent;
+    -webkit-text-stroke: 1.5px var(--green);
+    display: block;
+    filter: drop-shadow(0 0 18px var(--green-glow));
+  }
+
+  .home-sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    font-weight: 300;
+    color: var(--text-muted);
+    letter-spacing: 0.12em;
+    margin-bottom: 60px;
+  }
+
+  .home-sub em {
+    color: var(--green);
+    font-style: normal;
+    opacity: 0.8;
+  }
+
+  .btn-start {
+    position: relative;
+    overflow: hidden;
+    background: transparent;
+    border: 1px solid var(--green);
+    color: var(--green);
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 18px 64px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: color 0.35s, box-shadow 0.35s;
+    box-shadow: 0 0 0 var(--green-glow);
+  }
+
+  .btn-start::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--green);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  .btn-start span { position: relative; z-index: 1; }
+
+  .btn-start:hover {
+    color: #060608;
+    box-shadow: 0 0 32px var(--green-glow);
+  }
+
+  .btn-start:hover::before { transform: scaleX(1); }
+  .btn-start:active { transform: scale(0.97); }
+
+  .home-meta {
+    margin-top: 40px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .home-meta span { color: var(--text-mid); }
+
+  /* ════════════════════════════════
+     GAME SCREEN
+  ════════════════════════════════ */
+  #game-screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 40px;
+    padding-bottom: 48px;
+  }
+
+  .game-wrapper {
+    width: 100%;
+    max-width: 660px;
+  }
+
+  /* Top bar */
+  .top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 28px;
+  }
+
+  .logo-mark {
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: var(--text);
+  }
+
+  .logo-mark span { color: var(--green); }
+
+  .score-pill {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: right;
+    letter-spacing: 0.08em;
+  }
+
+  .score-pill strong {
+    display: block;
+    font-size: 24px;
+    font-weight: 500;
+    color: var(--green);
+    font-family: 'DM Mono', monospace;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    text-shadow: 0 0 14px var(--green-glow);
+  }
+
+  /* Progress */
+  .progress-track {
+    height: 1px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-bottom: 28px;
+    position: relative;
+    overflow: visible;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--green);
+    border-radius: 2px;
+    transition: width 0.7s cubic-bezier(0.4,0,0.2,1);
+    box-shadow: 0 0 10px var(--green-glow);
+    position: relative;
+  }
+
+  .progress-fill::after {
+    content: '';
+    position: absolute;
+    right: -1px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+  }
+
+  /* Round header */
+  .round-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .round-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .round-pts-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+  }
+
+  .round-pts-label .pts-val {
+    color: var(--gold);
+    font-size: 13px;
+  }
+
+  /* Clue card */
+  .clue-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px 36px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.4s, box-shadow 0.4s;
+  }
+
+  .clue-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 24px; right: 24px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--green), transparent);
+    opacity: 0.2;
+  }
+
+  .clue-card.win {
+    border-color: rgba(0,245,160,0.25);
+    box-shadow: 0 0 40px rgba(0,245,160,0.06);
+  }
+
+  .clue-card.shake {
+    animation: shake 0.45s ease;
+  }
+
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20%      { transform: translateX(-7px); }
+    40%      { transform: translateX(7px); }
+    60%      { transform: translateX(-4px); }
+    80%      { transform: translateX(4px); }
+  }
+
+  /* Dots */
+  .dot-row {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 22px;
+  }
+
+  .dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--border);
+    transition: background 0.3s, box-shadow 0.3s;
+  }
+
+  .dot.active {
+    background: var(--green);
+    box-shadow: 0 0 7px var(--green-glow);
+  }
+
+  .dot.done {
+    background: var(--text-muted);
+    opacity: 0.4;
+  }
+
+  /* Clue history */
+  .clue-history { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+
+  .history-item {
+    font-family: 'DM Mono', monospace;
+    font-size: 11.5px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    padding: 8px 14px;
+    background: rgba(255,255,255,0.02);
+    border-left: 1.5px solid rgba(0,245,160,0.12);
+    border-radius: 0 6px 6px 0;
+    animation: slideIn 0.3s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Current clue */
+  .clue-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9.5px;
+    letter-spacing: 0.3em;
+    color: var(--green);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    opacity: 0.6;
+  }
+
+  .clue-text {
+    font-size: 19px;
+    font-weight: 600;
+    line-height: 1.55;
+    color: var(--text);
+    min-height: 72px;
+    transition: opacity 0.25s;
+  }
+
+  .clue-text.fade { opacity: 0; }
+
+  /* Suspense */
+  .suspense {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    min-height: 72px;
+  }
+
+  .suspense.hidden { display: none; }
+
+  .sdot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: sdotPulse 1.1s ease infinite;
+    opacity: 0.4;
+  }
+  .sdot:nth-child(2) { animation-delay: 0.18s; }
+  .sdot:nth-child(3) { animation-delay: 0.36s; }
+
+  @keyframes sdotPulse {
+    0%,100% { transform: scale(0.7); opacity: 0.2; }
+    50%     { transform: scale(1.3); opacity: 1; box-shadow: 0 0 6px var(--green); }
+  }
+
+  /* Input area */
+  .input-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .answer-input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 15px 18px;
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    letter-spacing: 0.02em;
+  }
+
+  .answer-input::placeholder { color: var(--text-muted); font-weight: 400; font-size: 14px; }
+
+  .answer-input:focus {
+    border-color: rgba(0,245,160,0.3);
+    box-shadow: 0 0 18px rgba(0,245,160,0.08);
+  }
+
+  .btn-guess {
+    background: var(--green);
+    border: none;
+    color: #060608;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 15px 26px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    box-shadow: 0 0 18px rgba(0,245,160,0.2);
+  }
+
+  .btn-guess:hover { background: #1ffcac; transform: translateY(-1px); box-shadow: 0 0 28px rgba(0,245,160,0.3); }
+  .btn-guess:active { transform: translateY(0); }
+  .btn-guess:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+
+  .btn-next-clue {
+    width: 100%;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 13px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .btn-next-clue:hover:not(:disabled) {
+    border-color: rgba(0,245,160,0.25);
+    color: var(--green);
+    background: rgba(0,245,160,0.03);
+  }
+
+  .btn-next-clue:disabled { opacity: 0.25; cursor: not-allowed; }
+  .btn-next-clue .arrow { transition: transform 0.2s; }
+  .btn-next-clue:hover:not(:disabled) .arrow { transform: translateX(4px); }
+
+  /* ════════════════════════════════
+     FEEDBACK OVERLAY
+  ════════════════════════════════ */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(6,6,8,0.88);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    backdrop-filter: blur(10px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+
+  .overlay.show { opacity: 1; pointer-events: all; }
+
+  .feedback-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 52px 44px;
+    text-align: center;
+    max-width: 460px;
+    width: 100%;
+    transform: scale(0.88) translateY(12px);
+    transition: transform 0.35s cubic-bezier(0.175,0.885,0.32,1.275);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .overlay.show .feedback-card { transform: scale(1) translateY(0); }
+
+  .feedback-card.win { border-color: rgba(0,245,160,0.2); }
+  .feedback-card.win::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--green);
+    box-shadow: 0 0 16px var(--green-glow);
+  }
+
+  .feedback-card.lose { border-color: rgba(255,77,109,0.15); }
+
+  .fb-emoji {
+    font-size: 48px;
+    display: block;
+    margin-bottom: 20px;
+    animation: popIn 0.4s cubic-bezier(0.175,0.885,0.32,1.275);
+  }
+
+  @keyframes popIn {
+    from { transform: scale(0.3); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+  }
+
+  .fb-msg {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .win .fb-msg { color: var(--green); }
+  .lose .fb-msg { color: var(--red); }
+
+  .fb-answer {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+  }
+
+  .fb-detail {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 36px;
+    line-height: 1.6;
+  }
+
+  .fb-detail .hl { color: var(--gold); font-size: 16px; }
+  .fb-detail .green { color: var(--green); }
+
+  .btn-next {
+    background: transparent;
+    border: 1px solid var(--green);
+    color: var(--green);
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 15px 40px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-next span { position: relative; z-index: 1; }
+  .btn-next::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--green);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s;
+  }
+  .btn-next:hover { color: #060608; }
+  .btn-next:hover::before { transform: scaleX(1); }
+
+  /* ════════════════════════════════
+     END SCREEN
+  ════════════════════════════════ */
+  #end-screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards;
+  }
+
+  .end-eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.32em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .end-title {
+    font-size: clamp(40px, 8vw, 72px);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--text);
+    margin-bottom: 48px;
+    line-height: 0.95;
+  }
+
+  .end-title span { color: var(--green); }
+
+  .score-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 36px 60px;
+    margin-bottom: 32px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .score-box::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--green), transparent);
+  }
+
+  .score-box-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.36em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+
+  .score-big {
+    font-size: 68px;
+    font-weight: 800;
+    font-family: 'DM Mono', monospace;
+    color: var(--green);
+    line-height: 1;
+    text-shadow: 0 0 40px var(--green-glow);
+    letter-spacing: -0.04em;
+  }
+
+  .ranking-wrap {
+    width: 100%;
+    max-width: 460px;
+    margin-bottom: 36px;
+  }
+
+  .ranking-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.34em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+    text-align: left;
+  }
+
+  .rank-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 13px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 7px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .rank-row.me { border-color: rgba(0,245,160,0.22); background: rgba(0,245,160,0.03); }
+
+  .rank-pos {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    width: 22px;
+    flex-shrink: 0;
+  }
+
+  .rank-pts {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--green);
+    margin-left: auto;
+  }
+
+  .rank-date {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .btn-again {
+    background: transparent;
+    border: 1px solid var(--green);
+    color: var(--green);
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    padding: 17px 52px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-again span { position: relative; z-index: 1; }
+  .btn-again::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--green);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s;
+  }
+  .btn-again:hover { color: #060608; }
+  .btn-again:hover::before { transform: scaleX(1); }
+
+  /* ─── CONFETTI ─── */
+  .confetti-bit {
+    position: fixed;
+    pointer-events: none;
+    z-index: 200;
+    animation: cfall linear forwards;
+    border-radius: 2px;
+  }
+
+  @keyframes cfall {
+    0%   { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(540deg); opacity: 0; }
+  }
+
+  /* ─── KEYFRAMES ─── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+
+<!-- ══ HOME ══ -->
+<div class="screen" id="home-screen">
+  <div>
+    <div class="home-eyebrow">brand intelligence game</div>
+    <h1 class="home-title">
+      <span class="line1">MELLA</span>
+      <span class="line2">MYSTERY</span>
+    </h1>
+    <p class="home-sub"><em>//</em> discover if you can.</p>
+    <button class="btn-start" onclick="startGame()"><span>START GAME</span></button>
+    <p class="home-meta"><span>5 rodadas</span> · dicas progressivas · ranking local</p>
+  </div>
+</div>
+
+<!-- ══ GAME ══ -->
+<div class="screen" id="game-screen">
+  <div class="game-wrapper">
+
+    <div class="top-bar">
+      <div class="logo-mark">MELLA<span>.</span></div>
+      <div class="score-pill">
+        <strong id="score-display">0</strong>
+        PONTOS
+      </div>
+    </div>
+
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+
+    <div class="round-header">
+      <div class="round-num" id="round-num">RODADA 1 DE 5</div>
+      <div class="round-pts-label">Dica vale <span class="pts-val" id="pts-val">700</span> pts</div>
+    </div>
+
+    <div class="clue-card" id="clue-card">
+      <div class="dot-row" id="dot-row"></div>
+      <div class="clue-history" id="clue-history"></div>
+      <div class="clue-label" id="clue-label">DICA 1</div>
+      <div class="clue-text" id="clue-text"></div>
+      <div class="suspense hidden" id="suspense">
+        <div class="sdot"></div>
+        <div class="sdot"></div>
+        <div class="sdot"></div>
+      </div>
+    </div>
+
+    <div class="input-row">
+      <input class="answer-input" id="answer-input" type="text"
+        placeholder="digite sua resposta..."
+        autocomplete="off"
+        onkeydown="if(event.key==='Enter') checkAnswer()">
+      <button class="btn-guess" id="btn-guess" onclick="checkAnswer()">ADIVINHAR</button>
+    </div>
+
+    <button class="btn-next-clue" id="btn-next-clue" onclick="nextClue()">
+      <span>ver próxima dica</span>
+      <span class="arrow">→</span>
+    </button>
+
+  </div>
+</div>
+
+<!-- ══ END ══ -->
+<div class="screen" id="end-screen">
+  <div style="width:100%;max-width:520px;">
+    <div class="end-eyebrow">// fim de jogo</div>
+    <div class="end-title">GAME<br><span>OVER.</span></div>
+
+    <div class="score-box">
+      <div class="score-box-label">PONTUAÇÃO FINAL</div>
+      <div class="score-big" id="final-score">0</div>
+    </div>
+
+    <div class="ranking-wrap">
+      <div class="ranking-label">// RANKING LOCAL</div>
+      <div id="ranking-rows"></div>
+    </div>
+
+    <button class="btn-again" onclick="goHome()"><span>JOGAR NOVAMENTE</span></button>
+  </div>
+</div>
+
+<!-- ══ FEEDBACK OVERLAY ══ -->
+<div class="overlay" id="overlay">
+  <div class="feedback-card" id="feedback-card">
+    <span class="fb-emoji" id="fb-emoji">🎯</span>
+    <div class="fb-msg" id="fb-msg">CORRETO!</div>
+    <div class="fb-answer" id="fb-answer"></div>
+    <div class="fb-detail" id="fb-detail"></div>
+    <button class="btn-next" onclick="nextRound()"><span>PRÓXIMA RODADA →</span></button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// DATA — 5 rounds: intercalados marcas/clientes
+// ══════════════════════════════════════════════
+const ALL_ROUNDS = [
+  // ──── FAMOSAS ────
+  {
+    type: 'famous',
+    answer: 'spotify',
+    display: 'Spotify',
+    clues: [
+      'Seu logo virou símbolo de uma geração que faz streaming em vez de possuir música.',
+      'A marca transformou uma atividade solitária em fenômeno social — todo mundo compartilha o que ouve.',
+      'Criou o conceito de "descoberta musical" antes de todo mundo copiar.',
+      'Seu algoritmo virou personagem: tem nome, tem fãs e tem memes próprios.',
+      'Em dezembro, faz o mundo inteiro parar pra ver um resumo anual de si mesmo.',
+      'Verde, preto e fones de ouvido — essa paleta virou identidade cultural.',
+      'Mais de 600 milhões de usuários. A startup que virou o coração da indústria musical.'
+    ]
+  },
+  {
+    type: 'famous',
+    answer: 'duolingo',
+    display: 'Duolingo',
+    clues: [
+      'Transformou a ansiedade de não completar uma tarefa diária em produto.',
+      'O mascote da marca é mais temido do que amado — e a equipe de marketing abraçou isso completamente.',
+      'As notificações dessa marca são obras-primas de manipulação emocional passivo-agressiva.',
+      'Virou meme em todas as plataformas e usou isso pra crescer ainda mais.',
+      'O perfil nas redes sociais é cronicamente online e faz coisas que nenhuma marca faria.',
+      'Um corujão verde dominou o TikTok, o Twitter e o imaginário da geração Z.',
+      'App de idiomas com 300 milhões de usuários que descobriu que culpa e streak vendem mais do que aulas.'
+    ]
+  },
+  {
+    type: 'famous',
+    answer: 'red bull',
+    display: 'Red Bull',
+    clues: [
+      'Não vende bebida. Vende a ideia de que você pode ultrapassar qualquer limite.',
+      'É a única marca de refrigerante que patrocina um time de Fórmula 1, dois clubes de futebol e paraquedistas.',
+      'Lata pequena, posicionamento enorme. O produto tem gosto divisivo, mas a marca é universal.',
+      'Criou eventos, mídias próprias e atletas — tudo antes de "marca de mídia" ser um conceito.',
+      'O design da lata não mudou quase nada em 30 anos. Identidade visual é poder.',
+      'Associada ao extremo: cliffs, asas, velocidade e a sensação de não dormir.',
+      'A marca que literalmente "te dá asas" — slogan de uma empresa que nunca precisou de explicação.'
+    ]
+  },
+  {
+    type: 'famous',
+    answer: 'airbnb',
+    display: 'Airbnb',
+    clues: [
+      'Convenceu milhões de pessoas a dormir na casa de estranhos — e ainda se sentirem em casa.',
+      'Começou vendendo colchonetes infláveis durante uma convenção política para pagar o aluguel.',
+      'Disruptou a indústria hoteleira sem possuir um único quarto.',
+      'O redesign do logotipo em 2014 foi o mais zoado e mais comentado da década.',
+      'O conceito de "pertencimento" virou a base da identidade da marca inteira.',
+      'Você pode alugar um castelo, uma casa na árvore ou um barco por eles.',
+      'Plataforma de hospedagem que opera em 190+ países sem ter nenhuma propriedade no nome.'
+    ]
+  },
+  {
+    type: 'famous',
+    answer: 'netflix',
+    display: 'Netflix',
+    clues: [
+      'Inventou o binge-watching antes de a palavra existir.',
+      'Começou enviando DVDs pelo correio e matou as locadoras sem avisar.',
+      'O "são apenas 3 episódios a mais" virou cultura pop global por causa dela.',
+      'A identidade sonora de 3 segundos é uma das mais reconhecíveis do mundo.',
+      'Perdeu assinantes, cortou senhas compartilhadas e ainda assim domina o streaming.',
+      'Vermelho, preto e "N" — o logo é quase tão famoso quanto os conteúdos.',
+      'A plataforma que mudou o que o mundo assiste, quando assiste e como assiste.'
+    ]
+  },
+
+  // ──── CLIENTES ────
+  {
+    type: 'client',
+    answer: 'movimento dogo',
+    display: 'Movimento Dogo',
+    clues: [
+      'Transformou uma atividade rotineira e solitária em comunidade e identidade.',
+      'O cliente real da marca tem quatro patas e não faz a decisão de compra — mas é o centro de tudo.',
+      'A audiência trata o "produto" com mais carinho do que a si mesma.',
+      'Ruas, parques e trilhas viraram palco de conteúdo e conexão.',
+      'A marca fala a língua de quem trata pet como família — não como animal.',
+      'Passeios viraram experiências. Cães viraram influenciadores. Comunidade virou o produto.',
+      'Marca de passeios e estilo de vida para tutores de cães que acreditam que cuidar é um movimento.'
+    ]
+  },
+  {
+    type: 'client',
+    answer: 'ipe development',
+    display: 'IPE Development',
+    clues: [
+      'Opera na cidade onde art déco encontra o oceano e o luxo nunca tira férias.',
+      'Vende metros quadrados, mas o que realmente entrega é um estilo de vida que a maioria só vê em filme.',
+      'O conteúdo mistura lançamentos imobiliários com a energia do que acontece na cidade ao redor.',
+      'O público mede patrimônio em vista para o mar e código postal exclusivo.',
+      'Capital brasileiro encontra glamour americano nos projetos desta marca.',
+      'Eventos, networking e negócios imobiliários acontecem na mesma conversa.',
+      'Incorporadora de raiz brasileira que desenvolve residências de alto padrão em Miami, Florida.'
+    ]
+  },
+  {
+    type: 'client',
+    answer: 'pacheco e figueira de mello',
+    display: 'Pacheco e Figueira de Mello',
+    clues: [
+      'Atua no espaço onde lógica e emoção humana colidem com mais intensidade.',
+      'Os clientes chegam no momento mais difícil da história pessoal deles.',
+      'A marca precisa equilibrar autoridade com empatia — precisão com acolhimento.',
+      'Especializada em desfazer laços legais que envolvem o que há de mais valioso: os filhos.',
+      'Mediação, estratégia jurídica e sensibilidade caminham juntas no trabalho desta equipe.',
+      'Divórcio e guarda compartilhada são o núcleo do serviço — feitos com cuidado e competência.',
+      'Escritório de advocacia familiar focado em separações com filhos e mediação de conflitos.'
+    ]
+  },
+  {
+    type: 'client',
+    answer: 'realms education',
+    display: 'Realms Education',
+    clues: [
+      'Está construindo no setor que está prestes a ser completamente transformado pela tecnologia.',
+      'O produto é o futuro — e o cliente ainda está decidindo se confia nele.',
+      'A marca vive na interseção entre tecnologia e o investimento mais pessoal que existe: educação.',
+      'Entende que a verdadeira disrupção não é a ferramenta — é a mudança de mentalidade.',
+      'IA não é só parte do serviço. É parte central da identidade da marca.',
+      'Redefine o que significa ensinar, aprender e crescer num mundo movido por algoritmos.',
+      'Marca de educação que usa inteligência artificial para transformar como o conhecimento é entregue.'
+    ]
+  },
+  {
+    type: 'client',
+    answer: 'tr1',
+    display: 'TR1',
+    clues: [
+      'Entrou num mercado saturado e sinalizou imediatamente que não estava jogando o mesmo jogo.',
+      'O produto age no nível celular — e a marca comunica exatamente isso, sem simplificar.',
+      'É para quem já tentou de tudo e quer algo que se explica com ciência, não com promessa.',
+      'Biodisponibilidade virou linguagem de marca antes de o consumidor médio saber o que a palavra significa.',
+      'Posicionada para o público biohacker: inteligente, cético e obcecado com performance.',
+      'NAD, lipossomas e estudos clínicos são a versão deles de hype culture.',
+      'Marca de suplemento lipossomal desenvolvida para performance máxima, recuperação e saúde celular.'
+    ]
+  },
+  {
+    type: 'client',
+    answer: 'z studios',
+    display: 'Z Studios',
+    clues: [
+      'Vive no espaço onde talento bruto se transforma em som polido.',
+      'A marca é tão sobre a vibe do ambiente quanto sobre o que sai das sessões.',
+      'Serve criadores no momento em que uma ideia se torna algo que você pode realmente ouvir.',
+      'Engenharia de som, produção e direção criativa acontecem no mesmo ambiente.',
+      'Os heróis invisíveis da indústria musical trabalham atrás do vidro — esta marca é uma delas.',
+      'Artistas, produtores e beats — tudo sob o mesmo teto, perseguindo a mesma frequência.',
+      'Estúdio musical criado para artistas que levam o próprio som a sério.'
+    ]
+  }
+];
+
+// ══════════════════════════════════════════════
+// MENSAGENS
+// ══════════════════════════════════════════════
+const WIN_MSGS = [
+  'comportamento cronicamente online detectado ✅',
+  'cérebro de marketing ativado.',
+  'o algoritmo aprova.',
+  'seus instintos de branding são imaculados.',
+  'a Mella te contrataria.',
+  'gênio de marca certificado.'
+];
+
+const LOSE_MSGS = [
+  'o algoritmo está decepcionado.',
+  'seus instintos de branding precisam de café.',
+  'algum social media manager está chorando agora.',
+  'até a coruja ficou desapontada.',
+  'seu radar de marca precisa de calibração.',
+  'o mercado falou. é um não.'
+];
+
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+const TOTAL_ROUNDS = 5;
+let roundOrder = [];
+let curRound = 0;
+let curClue = 0;
+let totalScore = 0;
+let roundScore = 0;
+let guessed = false;
+
+// ══════════════════════════════════════════════
+// PARTICLES
+// ══════════════════════════════════════════════
+(function () {
+  const cv = document.getElementById('canvas');
+  const cx = cv.getContext('2d');
+  let pts = [], W, H;
+
+  function resize() { W = cv.width = innerWidth; H = cv.height = innerHeight; }
+
+  function init() {
+    resize();
+    pts = [];
+    const n = Math.floor((W * H) / 22000);
+    for (let i = 0; i < n; i++) {
+      pts.push({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        r: Math.random() * 1.2 + 0.3,
+        vx: (Math.random() - 0.5) * 0.12,
+        vy: (Math.random() - 0.5) * 0.12,
+        o: Math.random() * 0.5 + 0.1
+      });
+    }
+  }
+
+  function draw() {
+    cx.clearRect(0, 0, W, H);
+    for (const p of pts) {
+      cx.beginPath();
+      cx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      cx.fillStyle = `rgba(0,245,160,${p.o})`;
+      cx.fill();
+      p.x = (p.x + p.vx + W) % W;
+      p.y = (p.y + p.vy + H) % H;
+    }
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', init);
+  init(); draw();
+})();
+
+// ══════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function norm(s) {
+  return s.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\s+/g, ' ').trim();
+}
+
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+// Build a balanced round order: alternate client/famous
+function buildOrder() {
+  const famous = shuffle(ALL_ROUNDS.filter(r => r.type === 'famous'));
+  const clients = shuffle(ALL_ROUNDS.filter(r => r.type === 'client'));
+  const result = [];
+  let fi = 0, ci = 0;
+  // We need TOTAL_ROUNDS = 5: 2 famous + 3 clients, interleaved
+  // Pattern: client, famous, client, famous, client  OR  famous, client, famous, client, client
+  // Pick randomly: start with client or famous
+  const startFamous = Math.random() > 0.5;
+  for (let i = 0; i < TOTAL_ROUNDS; i++) {
+    const wantFamous = startFamous ? (i % 2 === 0) : (i % 2 === 1);
+    if (wantFamous && fi < famous.length) result.push(famous[fi++]);
+    else if (!wantFamous && ci < clients.length) result.push(clients[ci++]);
+    else if (fi < famous.length) result.push(famous[fi++]);
+    else result.push(clients[ci++]);
+  }
+  return result;
+}
+
+// ══════════════════════════════════════════════
+// GAME LOGIC
+// ══════════════════════════════════════════════
+function startGame() {
+  roundOrder = buildOrder();
+  curRound = 0;
+  totalScore = 0;
+  document.getElementById('score-display').textContent = '0';
+  document.getElementById('home-screen').style.display = 'none';
+  document.getElementById('game-screen').style.display = 'flex';
+  document.getElementById('end-screen').style.display = 'none';
+  loadRound();
+}
+
+function loadRound() {
+  const round = roundOrder[curRound];
+  curClue = 0;
+  guessed = false;
+  roundScore = 700;
+
+  document.getElementById('round-num').textContent = `RODADA ${curRound + 1} DE ${TOTAL_ROUNDS}`;
+  document.getElementById('pts-val').textContent = roundScore;
+  document.getElementById('progress-fill').style.width = (curRound / TOTAL_ROUNDS * 100) + '%';
+  document.getElementById('answer-input').value = '';
+  document.getElementById('answer-input').disabled = false;
+  document.getElementById('btn-guess').disabled = false;
+  document.getElementById('clue-history').innerHTML = '';
+  document.getElementById('clue-card').className = 'clue-card';
+
+  buildDots(round.clues.length);
+  renderClue(0);
+  updateNextBtn();
+}
+
+function buildDots(n) {
+  const row = document.getElementById('dot-row');
+  row.innerHTML = '';
+  for (let i = 0; i < n; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.id = `d${i}`;
+    row.appendChild(d);
+  }
+}
+
+function syncDots() {
+  const n = roundOrder[curRound].clues.length;
+  for (let i = 0; i < n; i++) {
+    const d = document.getElementById(`d${i}`);
+    if (!d) continue;
+    d.className = 'dot' + (i < curClue ? ' done' : i === curClue ? ' active' : '');
+  }
+}
+
+function renderClue(idx) {
+  const round = roundOrder[curRound];
+  document.getElementById('clue-label').textContent = `DICA ${idx + 1}`;
+  document.getElementById('clue-text').textContent = round.clues[idx];
+  syncDots();
+}
+
+function nextClue() {
+  const round = roundOrder[curRound];
+  if (curClue >= round.clues.length - 1) return;
+
+  // Archive current to history
+  const hist = document.getElementById('clue-history');
+  const item = document.createElement('div');
+  item.className = 'history-item';
+  item.textContent = `#${curClue + 1} — ${round.clues[curClue]}`;
+  hist.appendChild(item);
+
+  // Suspense
+  const txt = document.getElementById('clue-text');
+  const lbl = document.getElementById('clue-label');
+  const sus = document.getElementById('suspense');
+  txt.classList.add('fade');
+  lbl.style.opacity = '0';
+  sus.classList.remove('hidden');
+
+  roundScore = Math.max(50, roundScore - 100);
+  document.getElementById('pts-val').textContent = roundScore;
+
+  setTimeout(() => {
+    sus.classList.add('hidden');
+    curClue++;
+    txt.classList.remove('fade');
+    lbl.style.opacity = '';
+    renderClue(curClue);
+    updateNextBtn();
+  }, 800);
+}
+
+function updateNextBtn() {
+  const last = curClue >= roundOrder[curRound].clues.length - 1;
+  const btn = document.getElementById('btn-next-clue');
+  btn.disabled = last || guessed;
+  btn.querySelector('span').textContent = last ? 'sem mais dicas' : 'ver próxima dica';
+}
+
+function checkAnswer() {
+  if (guessed) return;
+  const val = document.getElementById('answer-input').value;
+  if (!val.trim()) return;
+
+  const round = roundOrder[curRound];
+  const user = norm(val);
+  const correct = norm(round.answer);
+  const isCorrect = user === correct ||
+    (user.length > 3 && correct.includes(user)) ||
+    (correct.length > 3 && user.includes(correct));
+
+  guessed = true;
+  document.getElementById('answer-input').disabled = true;
+  document.getElementById('btn-guess').disabled = true;
+  updateNextBtn();
+
+  if (isCorrect) {
+    totalScore += roundScore;
+    document.getElementById('score-display').textContent = totalScore;
+    document.getElementById('clue-card').classList.add('win');
+    showFeedback(true, round.display, roundScore);
+    spawnConfetti();
+  } else {
+    document.getElementById('clue-card').classList.add('shake');
+    setTimeout(() => document.getElementById('clue-card').classList.remove('shake'), 500);
+    showFeedback(false, round.display, 0);
+  }
+}
+
+function showFeedback(win, display, pts) {
+  const card = document.getElementById('feedback-card');
+  card.className = 'feedback-card ' + (win ? 'win' : 'lose');
+
+  document.getElementById('fb-emoji').textContent = win
+    ? pick(['🎯','✨','🔥','💎','⚡'])
+    : pick(['💀','😶','📉','🥀','😮‍💨']);
+
+  document.getElementById('fb-msg').textContent = win ? pick(WIN_MSGS) : pick(LOSE_MSGS);
+  document.getElementById('fb-answer').textContent = display;
+
+  if (win) {
+    document.getElementById('fb-detail').innerHTML = `<span class="hl">+${pts}</span> pontos conquistados`;
+  } else {
+    document.getElementById('fb-detail').innerHTML = `a resposta era <span class="green">${display}</span>`;
+  }
+
+  document.getElementById('overlay').classList.add('show');
+}
+
+function nextRound() {
+  document.getElementById('overlay').classList.remove('show');
+  curRound++;
+  if (curRound >= TOTAL_ROUNDS) {
+    showEnd();
+  } else {
+    loadRound();
+  }
+}
+
+function showEnd() {
+  document.getElementById('game-screen').style.display = 'none';
+  const end = document.getElementById('end-screen');
+  end.style.display = 'flex';
+  end.style.animation = 'none';
+  void end.offsetHeight;
+  end.style.animation = 'fadeUp 0.8s ease forwards';
+
+  document.getElementById('final-score').textContent = totalScore;
+  document.getElementById('progress-fill').style.width = '100%';
+
+  // Ranking
+  let ranking = JSON.parse(localStorage.getItem('mellaMysteryRanking') || '[]');
+  const entry = { score: totalScore, date: new Date().toLocaleDateString('pt-BR') };
+  ranking.push(entry);
+  ranking.sort((a, b) => b.score - a.score);
+  ranking = ranking.slice(0, 5);
+  localStorage.setItem('mellaMysteryRanking', JSON.stringify(ranking));
+
+  const rows = document.getElementById('ranking-rows');
+  rows.innerHTML = '';
+  ranking.forEach((r, i) => {
+    const isMe = r.score === totalScore && i === ranking.findIndex(x => x.score === totalScore);
+    const row = document.createElement('div');
+    row.className = 'rank-row' + (isMe ? ' me' : '');
+    row.innerHTML = `
+      <span class="rank-pos">${i === 0 ? '🥇' : '#' + (i + 1)}</span>
+      <span class="rank-date">${r.date}</span>
+      <span class="rank-pts">${r.score} pts</span>
+    `;
+    rows.appendChild(row);
+  });
+}
+
+function goHome() {
+  document.getElementById('end-screen').style.display = 'none';
+  const home = document.getElementById('home-screen');
+  home.style.display = 'flex';
+  home.style.opacity = '0';
+  home.style.animation = 'none';
+  void home.offsetHeight;
+  home.style.animation = 'fadeUp 0.8s ease forwards';
+}
+
+// ══════════════════════════════════════════════
+// CONFETTI
+// ══════════════════════════════════════════════
+function spawnConfetti() {
+  const colors = ['#00f5a0','#ffffff','#f5c842','#aaffdd','#00cc80'];
+  for (let i = 0; i < 55; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = 'confetti-bit';
+      const size = Math.random() * 7 + 3;
+      el.style.cssText = `
+        left:${Math.random() * 100}vw;
+        top:-8px;
+        width:${size}px;
+        height:${size}px;
+        background:${pick(colors)};
+        border-radius:${Math.random() > 0.4 ? '50%' : '2px'};
+        animation-duration:${1.4 + Math.random() * 1.6}s;
+        animation-delay:${Math.random() * 0.4}s;
+      `;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 2800);
+    }, i * 22);
+  }
+}
+</script>
+</body>
+</html>
